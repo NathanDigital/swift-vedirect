@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Ubuntu 26.04 / Swift 6.4.2 / arm64
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build image
+        run: docker build -t swift-vedirect-build:swift-6.4.2 docker
+
+      - name: Build
+        run: docker run --rm -v "$PWD":/src -w /src swift-vedirect-build:swift-6.4.2 swift build --build-tests
+
+      - name: Test
+        run: docker run --rm -v "$PWD":/src -w /src swift-vedirect-build:swift-6.4.2 swift test
+
+      - name: Lint
+        run: docker run --rm -v "$PWD":/src -w /src swift-vedirect-build:swift-6.4.2 swift format lint -s -r Sources Tests Package.swift
