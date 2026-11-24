@@ -12,6 +12,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Never open a serial port, read a file, sleep, log or start a task in the library; the caller owns all I/O and time.
 - No package dependencies and no Foundation import in the library target.
 - Never use an Apple-only API; the target is Linux arm64.
+- The project is MIT-licensed, © NathanDigital (`LICENSE`); the capture fixtures keep their own MIT notice beside them.
+
+## Structure
+
+- `Sources/VEDirect/Framing/`: `FrameParser`, the one state machine for text blocks and HEX frames, and `HexFrame`.
+- `Sources/VEDirect/Text/`: `TextBlock`, its typed fields and the text enumerations.
+- `Sources/VEDirect/Hex/`: `HexCommand`, `HexResponse`, `Register`, `RegisterValue` and `FirmwareVersion`.
+- `Sources/VEDirect/Tables/`: the product table and one register table per family (`MPPT`, `BMV`, `OrionXS`, `PhoenixInverter`).
+- `docs/architecture.md` records the design decisions, `docs/sources.md` the documents and their ambiguities, `docs/testing.md` the fixtures and verification status.
+- `VEDirectError` is the one error type; framing faults are reported as `FrameEvent.discarded`, everything else is thrown.
 
 ## Commands
 
@@ -75,7 +85,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `jordens/vedirect` (MIT or Apache-2.0): how small the core can be.
 - `karioja/vedirect` (MIT): real captures in `test/*.dump`; copy them as fixtures with its licence notice.
 - Never read code into this repository from `hoylabs/OpenDTU-OnBattery` (GPL-2.0), `davidcliddell/vehex` or `bencevans/ve.direct` (no licence).
-- Read a file with `gh api repos/<owner>/<repo>/contents/<path> --jq .content | base64 -d`.
+- Read a text file with `gh api repos/<owner>/<repo>/contents/<path> --jq .content | base64 -d`.
+- Fetch a binary file through `git/blobs/<sha>`; the `contents` endpoint re-encodes it and corrupts bytes above `0x7F` (see `docs/testing.md`).
 
 ## Text mode
 
@@ -110,11 +121,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Registers
 
-- A register definition holds its id, value type, scale, unit, access and whether it is stored in non-volatile memory.
+- A register definition holds its id, name, value type, scale, unit, not-available value and whether it is stored in non-volatile memory.
+- Never record register access; Victron's documents have no access column and the device answers a refused write with flag `0x02`.
+- Register definitions are per product family in `Sources/VEDirect/Tables/`; the same id can differ in type, scale and meaning between families.
 - Remote-control registers for the MPPT and Orion XS: `0x200E` network mode (un8), `0x2015` charge current limit (un16, 0.1 A), `0x2001` charge voltage set-point (un16, 0.01 V), `0x2002` voltage sense (un16, 0.01 V), `0x2003` temperature sense (sn16, 0.01 °C).
 - External control mode is `0x200E` = `0x05`; the charger reverts to stand-alone after 60 seconds without a rewrite.
 - Never offer a helper for BMS mode (`0x200E` = `0x09`); it permanently sets `0xEDE8` and the charger then stops with error 67 when data stops.
-- Mark `0xEDxx` battery settings as non-volatile and make writing one a separately named call that cannot be mistaken for a run-time write.
+- Mark `0xEDxx` battery settings and every other user setting as persistent; `HexCommand.setPersistent` writes one and `HexCommand.set` refuses it.
 - Orion XS registers come from the Orion XS document only; no reference project covers them.
 - The library builds and decodes frames; the caller decides when to send and how often to repeat.
 
@@ -124,7 +137,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Every example frame in Victron's documents is a test vector, named after its document.
 - Test the `0x3A` checksum byte case, a HEX frame inside a text block, a block split at every byte boundary, and a corrupted checksum.
 - Test that arbitrary and truncated byte sequences never trap and that the parser recovers on the next valid frame.
-- Test fixtures are real captures in `Tests/VEDirectTests/Fixtures/`, each with its device, firmware version and origin recorded.
+- Test fixtures are real captures in `Tests/VEDirectTests/Fixtures/`, each with its device, firmware version and origin recorded in `docs/testing.md`.
+- Add each fixture to the test target's `resources` with `.embedInCode`; never import Foundation to load one.
 - Encoding tests compare whole frames byte for byte, checksum included.
 - Never mark a behaviour verified until it has run against a capture from the real device.
 
