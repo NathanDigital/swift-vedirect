@@ -7,7 +7,7 @@ A pure-Swift library for **[Victron Energy's VE.Direct serial protocol](https://
 
 The library is a codec and a protocol state machine: bytes in, typed values out; typed commands in, bytes out. It opens no serial port and keeps no clock, so it works with whatever I/O you already have. All of the protocol knowledge comes from Victron's published documents, which are listed with their revisions in [docs/sources.md](docs/sources.md).
 
-> **Status: in development.** The register tables are transcribed from Victron's documents and tested against the documents' own examples, and the text parser is tested against captures from three real devices. Nothing has been verified against a BMV-712, a SmartSolar MPPT 100/50 or an Orion XS yet: see [docs/testing.md](docs/testing.md). No release is tagged, and the API is not stable.
+> **Status: in development.** The register tables are transcribed from Victron's documents and tested against the documents' own examples, and the text parser is tested against captures from three real devices. Nothing has been verified against a BMV-712, a SmartSolar MPPT 100/50 or an Orion XS yet: see [docs/testing.md](docs/testing.md). Releases are tagged, but the API is not stable yet: see [API stability](#api-stability).
 
 ## What's included
 
@@ -29,11 +29,11 @@ Serial drivers aren't part of this package: open the port yourself at 19200 baud
 
 ## Installation
 
-Add the package to your `Package.swift`. No release is tagged yet, so pin a commit:
+Add the package to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/NathanDigital/swift-vedirect.git", revision: "<commit>"),
+    .package(url: "https://github.com/NathanDigital/swift-vedirect.git", exact: "0.1.0"),
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
@@ -47,6 +47,17 @@ import VEDirect
 ```
 
 The package needs Swift 6.4 and has no dependencies of its own.
+
+### API stability
+
+Releases follow [Semantic Versioning](https://semver.org). Until 1.0, the API is still settling:
+
+- A **minor** release (0.1 to 0.2) may change or remove public API. The release notes list what changed.
+- A **patch** release (0.1.0 to 0.1.1) only fixes bugs and adds to the API, and doesn't break source that compiled against the same minor version.
+
+So pin with `exact:` as above, or with `.upToNextMinor(from: "0.1.0")` to pick up patch releases, and expect to make changes when you move to the next minor version. A plain `from: "0.1.0"` would accept 0.2.0, which may not compile against your code.
+
+A register's type, scale or persistence may be corrected in a patch release when a capture from a real device shows that the transcription from Victron's document was wrong.
 
 ## Usage
 
