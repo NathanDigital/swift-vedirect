@@ -146,5 +146,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Follow the Swift API Design Guidelines; name by meaning, not by wire label.
 - Every public declaration has a `///` comment starting with a one-sentence summary.
-- Documentation for people working on the library goes in `/docs`; never add other top-level Markdown files.
+- Documentation for people working on the library goes in `/docs`; `README.md` is for people using it. Never add other top-level Markdown files.
+- Keep the code in `README.md` compiling; check it against the current API when a public name changes.
 - Update this file when the structure or a rule changes.
